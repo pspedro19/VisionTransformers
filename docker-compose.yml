@@ -1,0 +1,269 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # ViT-GIF Highlight - CPU Version
+  # ============================================
+  vitgif-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: cpu-runtime
+      args:
+        BUILD_DATE: ${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        GIT_BRANCH: ${GIT_BRANCH:-unknown}
+    image: vitgif-highlight:cpu
+    container_name: vitgif-cpu
+    profiles: ["cpu"]
+    ports:
+      - "8000:8000"    # API
+      - "8501:8501"    # Streamlit UI
+    volumes:
+      - ./data/input:/app/input:ro
+      - ./data/output:/app/output
+      - ./logs:/app/logs
+      - ./config:/app/config:ro
+    environment:
+      - VITGIF_DEVICE=cpu
+      - VITGIF_CONFIG_PATH=/app/config/mvp1.yaml
+      - PYTHONPATH=/app
+      - OMP_NUM_THREADS=4  # Limit CPU threads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import src; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - vitgif-network
+
+  # ============================================
+  # ViT-GIF Highlight - GPU Version
+  # ============================================
+  vitgif-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: gpu-runtime
+      args:
+        BUILD_DATE: ${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        GIT_BRANCH: ${GIT_BRANCH:-unknown}
+    image: vitgif-highlight:gpu
+    container_name: vitgif-gpu
+    profiles: ["gpu"]
+    ports:
+      - "8000:8000"    # API
+      - "8501:8501"    # Streamlit UI
+    volumes:
+      - ./data/input:/app/input:ro
+      - ./data/output:/app/output
+      - ./logs:/app/logs
+      - ./config:/app/config:ro
+      - ./models:/app/models  # Model cache
+    environment:
+      - VITGIF_DEVICE=cuda
+      - VITGIF_CONFIG_PATH=/app/config/mvp2.yaml
+      - PYTHONPATH=/app
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import torch; assert torch.cuda.is_available(); import src; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - vitgif-network
+
+  # ============================================
+  # Development Environment
+  # ============================================
+  vitgif-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    image: vitgif-highlight:dev
+    container_name: vitgif-dev
+    profiles: ["dev"]
+    ports:
+      - "8000:8000"    # API
+      - "8501:8501"    # Streamlit UI
+      - "8888:8888"    # Jupyter
+    volumes:
+      - .:/app
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./models:/app/models
+      - vitgif-cache:/home/vitgif/.cache
+    environment:
+      - VITGIF_ENV=development
+      - PYTHONPATH=/app
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    tty: true
+    stdin_open: true
+    networks:
+      - vitgif-network
+
+  # ============================================
+  # MLflow Tracking Server (for metrics)
+  # ============================================
+  mlflow:
+    image: python:3.11-slim
+    container_name: vitgif-mlflow
+    profiles: ["mlflow", "gpu", "dev"]
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlflow:/mlflow
+      - mlflow-artifacts:/artifacts
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=sqlite:///mlflow/mlflow.db
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/artifacts
+    command: >
+      bash -c "
+        pip install mlflow==2.5.0 &&
+        mlflow server 
+          --backend-store-uri sqlite:///mlflow/mlflow.db 
+          --default-artifact-root /artifacts 
+          --host 0.0.0.0 
+          --port 5000
+      "
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - vitgif-network
+
+  # ============================================
+  # Redis (for caching and rate limiting)
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: vitgif-redis
+    profiles: ["gpu", "dev", "prod"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - vitgif-network
+
+  # ============================================
+  # Nginx (reverse proxy for production)
+  # ============================================
+  nginx:
+    image: nginx:alpine
+    container_name: vitgif-nginx
+    profiles: ["prod"]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./data/output:/var/www/output:ro  # Serve generated GIFs
+    depends_on:
+      - vitgif-gpu
+    restart: unless-stopped
+    networks:
+      - vitgif-network
+
+  # ============================================
+  # Monitoring with Prometheus + Grafana
+  # ============================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: vitgif-prometheus
+    profiles: ["monitoring"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - vitgif-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: vitgif-grafana
+    profiles: ["monitoring"]
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=vitgif123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    networks:
+      - vitgif-network
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  vitgif-cache:
+    name: vitgif-cache
+  mlflow-artifacts:
+    name: vitgif-mlflow-artifacts
+  redis-data:
+    name: vitgif-redis-data
+  prometheus-data:
+    name: vitgif-prometheus-data
+  grafana-data:
+    name: vitgif-grafana-data
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  vitgif-network:
+    name: vitgif-network
+    driver: bridge
+
+# ============================================
+# Environment file template
+# ============================================
+# Create a .env file with these variables:
+# BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+# GIT_COMMIT=$(git rev-parse HEAD)
+# GIT_BRANCH=$(git branch --show-current) 

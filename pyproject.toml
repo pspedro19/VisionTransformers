@@ -1,0 +1,68 @@
+[tool.poetry]
+name = "vit-gif-highlight"
+version = "2.0.0"
+description = "Generador Inteligente de GIFs con Atención Visual desde Videos"
+authors = ["Your Name <email@example.com>"]
+readme = "README.md"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+torch = "^2.0.0"
+torchvision = "^0.20.0"
+transformers = "^4.30.0"
+decord = "^0.6.0"
+opencv-python = "^4.8.0"
+pillow = "^11.0.0"
+numpy = "^1.26.0,<2.0.0"
+pydantic = "^2.0.0"
+pyyaml = "^6.0"
+python-magic = "^0.4.27"
+mlflow = "^2.5.0"
+fastapi = {version = "^0.100.0", optional = true}
+uvicorn = {extras = ["standard"], version = "^0.23.0", optional = true}
+streamlit = {version = "^1.25.0", optional = true}
+python-multipart = {version = "^0.0.6", optional = true}
+
+[tool.poetry.extras]
+api = ["fastapi", "uvicorn", "python-multipart"]
+ui = ["streamlit"]
+all = ["fastapi", "uvicorn", "streamlit", "python-multipart"]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.0"
+pytest-cov = "^4.1.0"
+black = "^23.7.0"
+ruff = "^0.0.282"
+isort = "^5.12.0"
+pre-commit = "^3.3.0"
+mypy = "^1.5.0"
+
+[tool.poetry.scripts]
+vitgif = "src.cli:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+
+[tool.ruff]
+target-version = "py39"
+line-length = 88
+select = ["E", "F", "W", "C90", "I", "N", "UP", "YTT", "S", "BLE", "FBT", "B", "A", "COM", "C4", "DTZ", "T10", "DJ", "EM", "EXE", "FA", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SLOT", "SIM", "TID", "TCH", "INT", "ARG", "PTH", "TD", "FIX", "ERA", "PD", "PGH", "PL", "TRY", "FLY", "NPY", "AIR", "PERF"]
+ignore = ["S101", "T201"]
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true 

@@ -1,0 +1,50 @@
+model:
+  name: "videomae-base"
+  device: "auto"  # auto detection: cuda if available, else cpu
+  precision: "fp16"  # fp16 for cuda, will fallback to fp32 for cpu
+
+limits:
+  max_resolution: 1080  # Increased to 1080p to handle most videos
+  max_duration: 60      # Increased back to 60 seconds
+  max_file_size: 200    # Increased to 200MB for larger videos
+  allowed_formats: ["mp4", "avi", "mov", "webm"]
+
+processing:
+  adaptive_stride: true  # Re-enabled adaptive stride
+  min_stride: 1
+  max_stride: 3  # Conservative stride for quality
+
+gif:
+  fps: 10              # Good balance
+  max_frames: 60       # Allow more frames
+  optimization_level: 1 # Light optimization
+  overlay_style: "transparent"
+  overlay_intensity: 0.4  # Subtle but visible
+  overlay_color: "blue"   # Default blue
+  maintain_duration: true # Maintain video timing
+  quality: 95           # High quality
+
+# Video segment selection
+video_segment:
+  start_time: 0.0      # Start time in seconds
+  duration: null       # Duration in seconds (null = full video)
+  auto_detect_highlights: true  # Automatically detect interesting segments
+
+# Advanced processing options
+advanced:
+  enable_motion_analysis: true
+  attention_threshold: 0.3
+  smooth_attention: true
+  enhance_contrast: true
+
+metrics:
+  track_performance: true
+  mlflow_uri: null
+  
+security:
+  validate_mime_type: true
+  scan_for_threats: false  # Would require additional tools
+  
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s" 
