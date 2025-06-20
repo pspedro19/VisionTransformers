@@ -34,7 +34,7 @@ class ProcessRequest(BaseModel):
     duration: float = Field(gt=0, le=60, description="Duration in seconds (max 60)")
     fps: int = Field(default=5, ge=1, le=15, description="Output GIF FPS")
     max_frames: int = Field(default=20, ge=5, le=50, description="Maximum frames")
-    overlay_style: str = Field(default="heatmap", regex="^(heatmap|highlight|glow|pulse)$")
+    overlay_style: str = Field(default="heatmap", regex="^(heatmap|highlight|glow|pulse|transparent)$")
     overlay_intensity: float = Field(default=0.7, ge=0.0, le=1.0)
     optimization_level: int = Field(default=2, ge=0, le=3)
     model_name: Optional[str] = Field(default=None, description="Optional model override")
