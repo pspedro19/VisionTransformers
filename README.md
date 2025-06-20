@@ -99,7 +99,7 @@ graph LR
 - ✅ **Video-Specific Models** - VideoMAE, TimeSformer, Video-Swin
 - ✅ **Intelligent Frame Selection** - Non-max suppression temporal
 - ✅ **Security Limits** - 720p/60s/100MB built-in protection
-- ✅ **Multiple Overlay Styles** - Heatmap, highlight, glow, pulse
+- ✅ **Multiple Overlay Styles** - Heatmap, highlight, glow, pulse, transparent
 - ✅ **CLI + Python API** - Easy integration
 - ✅ **Docker Support** - CPU/GPU variants
 
@@ -252,6 +252,7 @@ results = pipeline.process_batch(videos, "output_dir/")
 - **`highlight`** - Brighten important regions
 - **`glow`** - Golden glow effect around key areas
 - **`pulse`** - Animated pulse effect
+- **`transparent`** - Faint overlay showing attention without obstruction
 
 ### Configuration Files
 

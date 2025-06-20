@@ -49,7 +49,7 @@ poetry run python -c "import streamlit; print('✅ Streamlit listo')"
 - 🎮 **Controles de tiempo en tiempo real**
 - 📊 **Vista previa en vivo** del segmento seleccionado
 - ⚡ **WebSocket** para updates en tiempo real
-- 🎨 **4 estilos de overlay** (heatmap, highlight, glow, pulse)
+- 🎨 **5 estilos de overlay** (heatmap, highlight, glow, pulse, transparent)
 - 📱 **Responsivo** para móviles y tablets
 
 ### **🚀 Ejecutar FastAPI:**
