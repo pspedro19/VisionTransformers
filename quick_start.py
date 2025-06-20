@@ -95,7 +95,7 @@ with tab3:
     with col1:
         st.subheader("🎨 Visual")
         fps = st.slider("FPS", 1, 15, 5)
-        overlay_style = st.selectbox("Estilo", ["heatmap", "highlight", "glow", "pulse"])
+        overlay_style = st.selectbox("Estilo", ["heatmap", "highlight", "glow", "pulse", "transparent"])
         overlay_intensity = st.slider("Intensidad", 0.0, 1.0, 0.7, 0.1)
     
     with col2:
@@ -220,6 +220,7 @@ def create_simple_html():
                         <option value="highlight">✨ Highlight</option>
                         <option value="glow">🌟 Glow</option>
                         <option value="pulse">💫 Pulse</option>
+                        <option value="transparent">⚪ Transparent</option>
                     </select>
                 </div>
             </div>
