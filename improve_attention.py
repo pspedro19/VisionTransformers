@@ -279,7 +279,7 @@ def main():
     
     logger.info("\n💡 Recommendations for Better Attention:")
     logger.info("1. Use higher resolution (1080p) for better detail")
-    logger.info("2. Try different overlay styles: heatmap, highlight, glow, pulse")
+    logger.info("2. Try different overlay styles: heatmap, highlight, glow, pulse, transparent")
     logger.info("3. Increase overlay intensity (0.8-0.9)")
     logger.info("4. Use full precision (fp32) instead of fp16")
     logger.info("5. Process more frames with lower stride")
