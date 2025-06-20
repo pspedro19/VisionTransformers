@@ -22,7 +22,7 @@ with st.sidebar:
     st.markdown("""
     - ✅ Upload de video interactivo
     - ✅ Selección de segmento
-    - ✅ 4 estilos de overlay
+    - ✅ 5 estilos de overlay
     - ✅ Múltiples modelos IA
     - ✅ Configuración avanzada
     """)
