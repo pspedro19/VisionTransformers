@@ -12,6 +12,7 @@ from decord import VideoReader, gpu, cpu
 # Try to import torch with error handling
 try:
     import torch
+    import torch.nn.functional as F
     TORCH_AVAILABLE = True
 except ImportError as e:
     logging.warning(f"PyTorch not available: {e}")
