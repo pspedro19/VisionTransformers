@@ -139,9 +139,15 @@ class OptimizedVideoDecoder:
                     
                 logger.info(f"Resizing from {current_width}x{current_height} to {new_width}x{new_height}")
                 
-                # Reshape for interpolation: (T, H, W, C) -> (T, C, H, W)
+                # Resize using bilinear interpolation
                 frames_reshaped = frames.permute(0, 3, 1, 2)
-                frames_resized = frames_reshaped.permute(0, 2, 3, 1)
+                frames_resized = F.interpolate(
+                    frames_reshaped,
+                    size=(new_height, new_width),
+                    mode="bilinear",
+                    align_corners=False,
+                )
+                frames = frames_resized.permute(0, 2, 3, 1)
                 
             # Move to appropriate device
             try:

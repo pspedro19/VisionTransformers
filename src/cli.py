@@ -217,7 +217,11 @@ Examples:
     process_parser.add_argument('--config', default='config/mvp1.yaml', help='Configuration file')
     process_parser.add_argument('--fps', type=int, help='GIF frames per second')
     process_parser.add_argument('--max-frames', type=int, help='Maximum number of frames')
-    process_parser.add_argument('--overlay-style', choices=['heatmap', 'highlight', 'glow', 'pulse'], help='Attention overlay style')
+    process_parser.add_argument(
+        '--overlay-style',
+        choices=['heatmap', 'highlight', 'glow', 'pulse', 'transparent'],
+        help='Attention overlay style'
+    )
     process_parser.add_argument('--overlay-intensity', type=float, help='Overlay intensity (0.0-1.0)')
     process_parser.add_argument('--model', help='Model to use for attention')
     process_parser.add_argument('--device', choices=['auto', 'cuda', 'cpu'], help='Device to use')
