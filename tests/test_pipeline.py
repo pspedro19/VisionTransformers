@@ -102,8 +102,8 @@ class TestInMemoryPipeline:
     
     def test_video_limits_validation(self, temp_dir, config_mvp1):
         """Test that video limits are enforced."""
-        # Create oversized video by modifying config
-        config_mvp1["limits"]["max_resolution"] = 32  # Very small limit
+        # Test duration limit enforcement
+        config_mvp1["limits"]["max_duration"] = 2  # Very short limit (2 seconds)
         
         config_path = temp_dir / "test_config.yaml"
         import yaml
@@ -112,14 +112,15 @@ class TestInMemoryPipeline:
             
         pipeline = InMemoryPipeline(str(config_path))
         
-        # Create a video that exceeds the limit
-        video_path = temp_dir / "large_video.mp4"
+        # Create a video that exceeds the duration limit
+        video_path = temp_dir / "long_video.mp4"
         import cv2
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(str(video_path), fourcc, 5.0, (128, 128))  # Larger than limit
+        out = cv2.VideoWriter(str(video_path), fourcc, 5.0, (64, 64))  # 5 FPS
         
-        for i in range(5):
-            frame = torch.randint(0, 255, (128, 128, 3), dtype=torch.uint8).numpy()
+        # Create 20 frames (4 seconds at 5 FPS, exceeds 2 second limit)
+        for i in range(20):
+            frame = torch.randint(0, 255, (64, 64, 3), dtype=torch.uint8).numpy()
             out.write(frame)
         out.release()
         
@@ -129,7 +130,7 @@ class TestInMemoryPipeline:
         )
         
         assert result["success"] is False
-        assert "Resolution exceeds limit" in result.get("error", "")
+        assert "Duration exceeds limit" in result.get("error", "")
     
     def test_get_video_preview(self, sample_video_path, config_mvp1, temp_dir):
         """Test video preview functionality."""

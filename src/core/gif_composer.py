@@ -9,6 +9,7 @@ from PIL import Image, ImageDraw, ImageFilter
 from typing import List, Optional, Tuple
 import cv2
 from pathlib import Path
+from scipy.ndimage import center_of_mass
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +42,12 @@ class GifComposer:
         optimization_level: int = 1,
         maintain_duration: bool = True,
         quality: int = 95,
-        loop: bool = True
+        loop: bool = True,
+        tracking_points: Optional[List[Tuple[int, int]]] = None,
+        calculate_tracking_dot: bool = False
     ) -> dict:
         """
-        Create optimized GIF with attention overlays.
+        Create optimized GIF with attention overlays and object tracking.
         
         Args:
             frames: Video frames tensor (T, H, W, C)
@@ -59,6 +62,8 @@ class GifComposer:
             maintain_duration: Whether to maintain original video duration
             quality: GIF quality (1-100)
             loop: Whether GIF should loop
+            tracking_points: List of (x, y) coordinates for object tracking points
+            calculate_tracking_dot: Whether to calculate a tracking dot from attention maps.
             
         Returns:
             Dictionary with generation statistics
@@ -92,6 +97,14 @@ class GifComposer:
             overlay_intensity,
             overlay_color
         )
+        
+        # Calculate tracking points from attention if requested
+        if calculate_tracking_dot:
+            tracking_points = self._calculate_tracking_points_from_attention(attention_maps)
+
+        # Add tracking points if provided
+        if tracking_points is not None:
+            overlaid_frames = self._add_tracking_points(overlaid_frames, tracking_points)
         
         # Convert to PIL Images with high quality
         pil_frames = []
@@ -349,6 +362,115 @@ class GifComposer:
         
         return result
     
+    def _add_tracking_points(
+        self,
+        frames: np.ndarray,
+        tracking_points: List[Tuple[int, int]]
+    ) -> np.ndarray:
+        """
+        Add tracking points and trails to frames for object following visualization.
+        
+        Args:
+            frames: Video frames (T, H, W, C)
+            tracking_points: List of (x, y) coordinates for each frame
+            
+        Returns:
+            Frames with tracking visualization
+        """
+        result_frames = frames.copy()
+        trail_length = 8  # Number of previous points to show in trail
+        
+        for i, (frame, point) in enumerate(zip(result_frames, tracking_points)):
+            if point is None:
+                continue
+                
+            x, y = point
+            
+            # Draw trail (previous positions)
+            for j in range(max(0, i - trail_length), i):
+                if j < len(tracking_points) and tracking_points[j] is not None:
+                    trail_x, trail_y = tracking_points[j]
+                    alpha = (j - max(0, i - trail_length)) / trail_length  # Fade effect
+                    
+                    # Draw trail point (smaller, faded)
+                    trail_radius = int(3 + alpha * 2)
+                    trail_color = (255, 255, 0)  # Yellow trail
+                    trail_intensity = alpha * 0.7
+                    
+                    self._draw_circle(frame, trail_x, trail_y, trail_radius, trail_color, trail_intensity)
+            
+            # Draw current tracking point (larger, bright)
+            self._draw_tracking_point(frame, x, y)
+            
+            # Draw trajectory line for next few points (if available)
+            future_points = 3
+            for j in range(i + 1, min(i + future_points + 1, len(tracking_points))):
+                if j < len(tracking_points) and tracking_points[j] is not None:
+                    next_x, next_y = tracking_points[j]
+                    # Draw line from current to next
+                    self._draw_line(frame, x, y, next_x, next_y, (0, 255, 255), 0.3)  # Cyan prediction
+                    break
+        
+        return result_frames
+    
+    def _draw_tracking_point(self, frame: np.ndarray, x: int, y: int):
+        """Draw a tracking point with cross-hair and circle."""
+        # Central bright dot
+        self._draw_circle(frame, x, y, 6, (255, 0, 0), 0.9)  # Red center
+        self._draw_circle(frame, x, y, 4, (255, 255, 255), 1.0)  # White core
+        
+        # Cross-hair lines
+        line_length = 15
+        self._draw_line(frame, x - line_length, y, x + line_length, y, (255, 0, 0), 0.8)
+        self._draw_line(frame, x, y - line_length, x, y + line_length, (255, 0, 0), 0.8)
+        
+        # Outer circle
+        self._draw_circle_outline(frame, x, y, 12, (255, 255, 255), 0.6)
+    
+    def _draw_circle(self, frame: np.ndarray, x: int, y: int, radius: int, color: Tuple[int, int, int], alpha: float):
+        """Draw a filled circle on the frame."""
+        h, w = frame.shape[:2]
+        y_coords, x_coords = np.ogrid[:h, :w]
+        mask = (x_coords - x)**2 + (y_coords - y)**2 <= radius**2
+        
+        if np.any(mask):
+            frame[mask] = (frame[mask] * (1 - alpha) + np.array(color) * alpha).astype(np.uint8)
+    
+    def _draw_circle_outline(self, frame: np.ndarray, x: int, y: int, radius: int, color: Tuple[int, int, int], alpha: float):
+        """Draw a circle outline on the frame."""
+        h, w = frame.shape[:2]
+        y_coords, x_coords = np.ogrid[:h, :w]
+        distance = np.sqrt((x_coords - x)**2 + (y_coords - y)**2)
+        mask = np.abs(distance - radius) <= 1
+        
+        if np.any(mask):
+            frame[mask] = (frame[mask] * (1 - alpha) + np.array(color) * alpha).astype(np.uint8)
+    
+    def _draw_line(self, frame: np.ndarray, x1: int, y1: int, x2: int, y2: int, color: Tuple[int, int, int], alpha: float):
+        """Draw a line on the frame."""
+        # Simple line drawing using Bresenham-like algorithm
+        points = self._get_line_points(x1, y1, x2, y2)
+        h, w = frame.shape[:2]
+        
+        for px, py in points:
+            if 0 <= px < w and 0 <= py < h:
+                frame[py, px] = (frame[py, px] * (1 - alpha) + np.array(color) * alpha).astype(np.uint8)
+    
+    def _get_line_points(self, x1: int, y1: int, x2: int, y2: int) -> List[Tuple[int, int]]:
+        """Get points along a line using simple interpolation."""
+        distance = max(abs(x2 - x1), abs(y2 - y1))
+        if distance == 0:
+            return [(x1, y1)]
+        
+        points = []
+        for i in range(distance + 1):
+            t = i / distance
+            x = int(x1 + t * (x2 - x1))
+            y = int(y1 + t * (y2 - y1))
+            points.append((x, y))
+        
+        return points
+    
     def _optimize_frames(
         self, 
         frames: List[Image.Image], 
@@ -452,4 +574,36 @@ class GifComposer:
         grid_img.save(output_path, 'JPEG', quality=90)
         
         logger.info(f"Preview grid saved: {output_path}")
-        return str(output_path) 
+        return str(output_path)
+
+    def _calculate_tracking_points_from_attention(
+        self, attention_maps: np.ndarray, threshold: float = 0.75
+    ) -> List[Tuple[int, int]]:
+        """
+        Calculate the center of mass for the most salient region in each attention map.
+
+        Args:
+            attention_maps: Normalized attention maps (T, H, W).
+            threshold: The threshold to binarize the map and find the salient region.
+
+        Returns:
+            A list of (x, y) coordinates for the center of each map.
+        """
+        tracking_points = []
+        for att_map in attention_maps:
+            # Threshold the map to focus on the most salient areas
+            binary_map = att_map > threshold
+            
+            if np.any(binary_map):
+                # Calculate the center of mass of the largest connected component
+                # For simplicity, we use center_of_mass on the entire binary map
+                # A more advanced implementation could use skimage.measure.label
+                cy, cx = center_of_mass(binary_map)
+                tracking_points.append((int(cx), int(cy)))
+            else:
+                # If no area is above the threshold, use the center of the frame as a fallback
+                # or you could choose to not add a point.
+                h, w = att_map.shape
+                tracking_points.append((w // 2, h // 2))
+                
+        return tracking_points 

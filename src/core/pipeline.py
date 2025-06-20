@@ -225,13 +225,26 @@ class InMemoryPipeline:
                 attention_np = attention_maps
                 
             # Create GIF with simple overlay
-            gif_stats = self._create_simple_gif(
-                frames_display,
-                attention_np,
-                output_path,
-                config,
-                trajectory=trajectory
-            )
+            gif_style = config.get('gif', {}).get('overlay_style', 'highlight')
+
+            if gif_style == 'tracking_dot':
+                 gif_stats = self.gif_composer.create_gif(
+                    frames=torch.from_numpy(frames_display),
+                    attention_maps=torch.from_numpy(attention_np),
+                    output_path=output_path,
+                    fps=config.get('gif', {}).get('fps', 10),
+                    overlay_style='transparent',
+                    calculate_tracking_dot=True,
+                    overlay_intensity=0
+                )
+            else:
+                gif_stats = self._create_simple_gif(
+                    frames_display,
+                    attention_np,
+                    output_path,
+                    config,
+                    trajectory=trajectory
+                )
             
             # Calculate timing
             if use_cuda_timing:
@@ -281,101 +294,31 @@ class InMemoryPipeline:
         trajectory: Optional[List[Tuple[int, int]]] = None
     ) -> Dict[str, Any]:
         """
-        Create GIF with simple attention overlay.
-        
-        Args:
-            frames: Video frames (T, H, W, C) in 0-255 range
-            attention_maps: Attention maps (T, H, W) in 0-1 range
-            output_path: Output path
-            config: Configuration
-            trajectory: Trajectory of the tracked object
-            
-        Returns:
-            Statistics dictionary
+        Create GIF with a simple, direct overlay of attention maps.
+        This version is less complex than the fallback and primary for direct visualization.
         """
-        import cv2
-        from PIL import Image
+        gif_config = config.get('gif', {})
         
-        logger.info("Creating GIF with simple overlay...")
-        
-        overlaid_frames = []
-        overlay_intensity = config['gif']['overlay_intensity']
-        overlay_color = config['gif'].get('overlay_color', 'blue')
-        
-        for i, (frame, attention) in enumerate(zip(frames, attention_maps)):
-            # Ensure frame is uint8
-            if frame.dtype != np.uint8:
-                frame = frame.astype(np.uint8)
-                
-            # Resize attention map to match frame if needed
-            if attention.shape != frame.shape[:2]:
-                attention = cv2.resize(attention, (frame.shape[1], frame.shape[0]))
-                
-            # Normalize attention to 0-1
-            if attention.max() > attention.min():
-                attention = (attention - attention.min()) / (attention.max() - attention.min())
-            else:
-                attention = np.zeros_like(attention)
-                
-            # Create overlay
-            overlay_frame = frame.copy().astype(np.float32)
+        try:
+            stats = self.gif_composer.create_gif(
+                frames=torch.from_numpy(frames),
+                attention_maps=torch.from_numpy(attention_maps),
+                output_path=output_path,
+                fps=gif_config.get('fps', 10),
+                overlay_style=gif_config.get('overlay_style', 'highlight'),
+                overlay_intensity=gif_config.get('overlay_intensity', 0.6),
+                optimization_level=gif_config.get('optimization_level', 2),
+                quality=gif_config.get('quality', 95),
+                calculate_tracking_dot=False
+            )
+            return stats
             
-            if overlay_color.lower() == 'blue':
-                # Add blue tint where attention is high
-                overlay_frame[:, :, 2] = np.minimum(255, overlay_frame[:, :, 2] + attention * overlay_intensity * 100)
-            else:  # yellow
-                # Add yellow tint where attention is high
-                overlay_frame[:, :, 0] = np.minimum(255, overlay_frame[:, :, 0] + attention * overlay_intensity * 100)
-                overlay_frame[:, :, 1] = np.minimum(255, overlay_frame[:, :, 1] + attention * overlay_intensity * 100)
-                
-            overlaid_frame_uint8 = overlay_frame.astype(np.uint8)
-
-            # Draw trajectory if available
-            if trajectory and i > 0:
-                for j in range(1, i + 1):
-                    start_point = trajectory[j - 1]
-                    end_point = trajectory[j]
-                    # Draw a line segment
-                    cv2.line(overlaid_frame_uint8, start_point, end_point, (255, 255, 0), 2) # Cyan line
-
-            overlaid_frames.append(overlaid_frame_uint8)
-            
-            if i % 10 == 0:
-                logger.info(f"Processed frame {i+1}/{len(frames)}")
-        
-        # Convert to PIL images
-        pil_frames = [Image.fromarray(frame) for frame in overlaid_frames]
-        
-        # Calculate frame duration
-        fps = config['gif'].get('fps', 10)
-        duration = int(1000 / fps)  # milliseconds per frame
-        
-        # Save GIF
-        output_path = Path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        pil_frames[0].save(
-            output_path,
-            format='GIF',
-            save_all=True,
-            append_images=pil_frames[1:],
-            duration=duration,
-            loop=0,
-            optimize=False,  # Don't optimize for best quality
-            disposal=2
-        )
-        
-        file_size = output_path.stat().st_size
-        
-        logger.info(f"GIF saved: {output_path} ({file_size/1024/1024:.1f}MB)")
-        
-        return {
-            "output_path": str(output_path),
-            "total_frames": len(pil_frames),
-            "file_size_mb": file_size / (1024 * 1024),
-            "fps": fps,
-            "frame_duration_ms": duration
-        }
+        except Exception as e:
+            logger.error(f"Failed to create simple GIF: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
     
     def _select_key_frames(
         self, 

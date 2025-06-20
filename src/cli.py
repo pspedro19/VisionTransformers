@@ -219,7 +219,7 @@ Examples:
     process_parser.add_argument('--max-frames', type=int, help='Maximum number of frames')
     process_parser.add_argument(
         '--overlay-style',
-        choices=['heatmap', 'highlight', 'glow', 'pulse', 'transparent'],
+        choices=['heatmap', 'highlight', 'glow', 'pulse', 'transparent', 'tracking_dot'],
         help='Attention overlay style'
     )
     process_parser.add_argument('--overlay-intensity', type=float, help='Overlay intensity (0.0-1.0)')
