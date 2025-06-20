@@ -1,0 +1,87 @@
+# Configuración Balanced - RTX 3070, RTX 3060 (6-8GB VRAM)
+# Balance optimizado para GPUs de gama media
+
+hardware:
+  gpu_memory_limit: 6000  # MB - Dejar buffer de 2GB
+  cpu_cores: 8
+  batch_size: 4
+  mixed_precision: true
+  flash_attention: true
+  tensorrt_optimization: false
+  torch_compile: true
+
+video:
+  max_resolution: [1920, 1080]  # 1080p
+  target_fps: 15
+  temporal_sampling: 5
+  quality_preset: "balanced"
+  codec: "h264"
+  max_duration: 60  # segundos
+
+attention:
+  # Canal A - Atención Espaciotemporal Global
+  channel_a:
+    model: "mvit_v2_s"
+    backbone: "mvit_v2_s_16x2_224"
+    attention_type: "gmar"
+    spatial_resolution: [192, 192]
+    temporal_window: 8
+    attention_heads: 8
+    flash_attention: true
+    gradient_checkpointing: true
+    
+  # Canal B - Atención por Objetos
+  channel_b:
+    detection_model: "yolo_v8"
+    tracking_model: "bytetrack"
+    object_classes: ["person", "vehicle", "animal"]
+    confidence_threshold: 0.5
+    nms_threshold: 0.4
+    max_objects: 10
+    tracking_persistence: 0.6
+
+visualization:
+  # Canal A - Sombras azules semitransparentes
+  channel_a_style:
+    color: [0, 100, 255]  # Azul
+    alpha: 0.6
+    blur_radius: 2
+    heatmap_smoothing: 0.6
+    
+  # Canal B - Sombras de colores por objeto
+  channel_b_style:
+    colors:
+      person: [255, 0, 0]      # Rojo
+      vehicle: [0, 255, 0]     # Verde
+      animal: [255, 165, 0]    # Naranja
+    alpha: 0.7
+    blur_radius: 2
+    object_tracking: true
+    
+  # Configuración general
+  output_format: "gif"
+  output_quality: 85
+  frame_rate: 6
+  loop: true
+  optimization_level: 1
+
+processing:
+  pipeline_type: "dual_channel"
+  async_processing: true
+  memory_optimization: true
+  gpu_utilization_target: 85
+  temperature_monitoring: true
+  max_temperature: 75
+  
+  # Optimizaciones específicas
+  tensorrt_precision: "fp16"
+  cuda_graphs: false
+  memory_pooling: true
+  gradient_accumulation: 2
+
+output:
+  directory: "data/output"
+  filename_pattern: "{video_name}_dual_channel_{timestamp}"
+  save_intermediate: false
+  compression: "lzw"
+  max_file_size: 30  # MB 

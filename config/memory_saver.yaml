@@ -1,0 +1,98 @@
+# Configuración Memory Saver - RTX 3050, GTX 1660 (4-6GB VRAM)
+# Optimizada específicamente para GPUs con memoria limitada
+
+hardware:
+  gpu_memory_limit: 3500  # MB - Dejar buffer de 500MB
+  cpu_cores: 6
+  batch_size: 2
+  mixed_precision: true
+  flash_attention: true
+  tensorrt_optimization: false
+  torch_compile: false
+
+video:
+  max_resolution: [1280, 720]  # 720p
+  target_fps: 6
+  temporal_sampling: 4
+  quality_preset: "memory_saver"
+  codec: "h264"
+  max_duration: 30  # segundos
+
+attention:
+  # Canal A - Atención Espaciotemporal Global
+  channel_a:
+    model: "mvit_v2_xs"
+    backbone: "mvit_v2_xs_16x2_224"
+    attention_type: "standard"  # Más eficiente en memoria
+    spatial_resolution: [160, 160]
+    temporal_window: 6
+    attention_heads: 6
+    flash_attention: true
+    gradient_checkpointing: true
+    
+  # Canal B - Atención por Objetos
+  channel_b:
+    detection_model: "yolo_v8n"  # Nano version
+    tracking_model: "bytetrack"
+    object_classes: ["person", "vehicle"]  # Reducido para eficiencia
+    confidence_threshold: 0.4
+    nms_threshold: 0.3
+    max_objects: 5
+    tracking_persistence: 0.5
+
+visualization:
+  # Canal A - Sombras azules semitransparentes
+  channel_a_style:
+    color: [0, 100, 255]  # Azul
+    alpha: 0.5
+    blur_radius: 1
+    heatmap_smoothing: 0.5
+    
+  # Canal B - Sombras de colores por objeto
+  channel_b_style:
+    colors:
+      person: [255, 0, 0]      # Rojo
+      vehicle: [0, 255, 0]     # Verde
+    alpha: 0.6
+    blur_radius: 1
+    object_tracking: true
+    
+  # Configuración general
+  output_format: "gif"
+  output_quality: 80
+  frame_rate: 4
+  loop: true
+  optimization_level: 0
+
+processing:
+  pipeline_type: "dual_channel"
+  async_processing: false  # Menos memoria
+  memory_optimization: true
+  gpu_utilization_target: 80
+  temperature_monitoring: true
+  max_temperature: 70
+  
+  # Optimizaciones específicas para memoria limitada
+  tensorrt_precision: "fp16"
+  cuda_graphs: false
+  memory_pooling: true
+  gradient_accumulation: 4
+  cache_cleanup_interval: 5  # Limpiar caché cada 5 batches
+  
+  # Procesamiento en chunks
+  chunk_size: 10  # segundos
+  chunk_overlap: 2  # segundos
+
+output:
+  directory: "data/output"
+  filename_pattern: "{video_name}_dual_channel_{timestamp}"
+  save_intermediate: false
+  compression: "lzw"
+  max_file_size: 20  # MB
+  
+  # Post-procesamiento para mejorar calidad
+  post_processing:
+    upscale: true
+    upscale_factor: 1.5  # 480p -> 720p
+    temporal_smoothing: true
+    quality_enhancement: true 

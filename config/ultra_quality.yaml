@@ -1,0 +1,88 @@
+# Configuración Ultra Quality - RTX 4090, RTX 4080 (16GB+ VRAM)
+# Máxima calidad y rendimiento para GPUs de alta gama
+
+hardware:
+  gpu_memory_limit: 22000  # MB - Dejar buffer de 2GB
+  cpu_cores: 16
+  batch_size: 16
+  mixed_precision: true
+  flash_attention: true
+  tensorrt_optimization: true
+  torch_compile: true
+
+video:
+  max_resolution: [3840, 2160]  # 4K
+  target_fps: 25
+  temporal_sampling: 8
+  quality_preset: "ultra"
+  codec: "h264"
+  max_duration: 120  # segundos
+
+attention:
+  # Canal A - Atención Espaciotemporal Global
+  channel_a:
+    model: "mvit_v2_b"
+    backbone: "mvit_v2_b_16x2_224"
+    attention_type: "gmar"  # Gradient-weighted Multi-scale Attention
+    spatial_resolution: [224, 224]
+    temporal_window: 16
+    attention_heads: 16
+    flash_attention: true
+    gradient_checkpointing: false
+    
+  # Canal B - Atención por Objetos
+  channel_b:
+    detection_model: "deformable_detr"
+    tracking_model: "trackformer"
+    object_classes: ["person", "vehicle", "animal", "object"]
+    confidence_threshold: 0.7
+    nms_threshold: 0.5
+    max_objects: 20
+    tracking_persistence: 0.8
+
+visualization:
+  # Canal A - Sombras azules semitransparentes
+  channel_a_style:
+    color: [0, 100, 255]  # Azul
+    alpha: 0.6
+    blur_radius: 3
+    heatmap_smoothing: 0.8
+    
+  # Canal B - Sombras de colores por objeto
+  channel_b_style:
+    colors:
+      person: [255, 0, 0]      # Rojo
+      vehicle: [0, 255, 0]     # Verde
+      animal: [255, 165, 0]    # Naranja
+      object: [128, 0, 128]    # Púrpura
+    alpha: 0.7
+    blur_radius: 2
+    object_tracking: true
+    
+  # Configuración general
+  output_format: "gif"
+  output_quality: 95
+  frame_rate: 10
+  loop: true
+  optimization_level: 3
+
+processing:
+  pipeline_type: "dual_channel"
+  async_processing: true
+  memory_optimization: false
+  gpu_utilization_target: 95
+  temperature_monitoring: true
+  max_temperature: 85
+  
+  # Optimizaciones específicas
+  tensorrt_precision: "fp16"
+  cuda_graphs: true
+  memory_pooling: true
+  gradient_accumulation: 1
+
+output:
+  directory: "data/output"
+  filename_pattern: "{video_name}_dual_channel_{timestamp}"
+  save_intermediate: true
+  compression: "lzw"
+  max_file_size: 50  # MB 
