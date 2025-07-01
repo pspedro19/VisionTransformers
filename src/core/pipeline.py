@@ -301,8 +301,8 @@ class InMemoryPipeline:
         
         try:
             stats = self.gif_composer.create_gif(
-                frames=torch.from_numpy(frames),
-                attention_maps=torch.from_numpy(attention_maps),
+                frames=frames,
+                attention_maps=attention_maps,
                 output_path=output_path,
                 fps=gif_config.get('fps', 10),
                 overlay_style=gif_config.get('overlay_style', 'highlight'),
@@ -525,11 +525,12 @@ class InMemoryPipeline:
     def _estimate_processing_time(self, video_info: Dict[str, Any]) -> float:
         """Estimate processing time based on video characteristics."""
         # Simple heuristic based on resolution and duration
-        pixels_per_second = video_info['width'] * video_info['height'] * video_info['fps']
+        pixels_per_second = video_info['width'] * video_info['height'] * video_info.get('fps', 30.0)
         total_pixels = pixels_per_second * video_info['duration']
         
         # Rough estimates (seconds per megapixel)
-        if TORCH_AVAILABLE and video_info['device'] == 'cuda':
+        device = video_info.get('device', 'cpu')
+        if TORCH_AVAILABLE and device == 'cuda':
             time_per_mpixel = 0.1  # GPU
         else:
             time_per_mpixel = 0.5  # CPU
@@ -542,10 +543,11 @@ class InMemoryPipeline:
         """Recommend optimal settings based on video characteristics."""
         duration = video_info['duration']
         resolution = max(video_info['width'], video_info['height'])
+        fps = video_info.get('fps', 30.0)  # Default to 30 FPS if not provided
         
         # Recommend GIF FPS based on original FPS and duration
         if duration < 5:
-            recommended_fps = min(8, video_info['fps'] / 2)
+            recommended_fps = min(8, fps / 2)
         elif duration < 15:
             recommended_fps = 5
         else:

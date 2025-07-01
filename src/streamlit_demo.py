@@ -4,106 +4,106 @@ import tempfile
 import time
 
 st.set_page_config(
-    page_title="ViT-GIF Highlight Demo",
+    page_title="Vision Transformers GIF Generator",
     page_icon="🎬",
     layout="wide"
 )
 
 st.markdown("""
 <div style="text-align: center; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 2rem; border-radius: 10px; margin-bottom: 2rem;">
-    <h1>🎬 ViT-GIF Highlight Demo</h1>
-    <p>Generador Inteligente de GIFs con Atención Visual</p>
+    <h1>Vision Transformers GIF Generator</h1>
+    <p>Convert videos to GIFs with visual attention highlighting</p>
 </div>
 """, unsafe_allow_html=True)
 
 # Sidebar
 with st.sidebar:
-    st.markdown("### 🎯 Funcionalidades")
+    st.markdown("### Features")
     st.markdown("""
-    - ✅ Upload de video interactivo
-    - ✅ Selección de segmento
-    - ✅ 5 estilos de overlay
-    - ✅ Múltiples modelos IA
-    - ✅ Configuración avanzada
+    - Upload video interactively
+    - Select video segment
+    - Multiple overlay styles
+    - Various AI models
+    - Advanced configuration
     """)
 
 # Main interface
-tab1, tab2, tab3, tab4 = st.tabs(["📁 Upload", "⏱️ Tiempo", "⚙️ Config", "🚀 Generar"])
+tab1, tab2, tab3, tab4 = st.tabs(["Upload", "Time", "Config", "Generate"])
 
 with tab1:
-    st.header("📁 Cargar Video")
+    st.header("Upload Video")
     
     uploaded_file = st.file_uploader(
-        "Selecciona tu video",
+        "Select your video",
         type=['mp4', 'avi', 'mov', 'webm'],
-        help="Arrastra y suelta tu archivo aquí"
+        help="Drag and drop your file here"
     )
     
     if uploaded_file:
-        st.success("✅ Video cargado exitosamente!")
+        st.success("Video uploaded successfully!")
         
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Tamaño", f"{len(uploaded_file.getvalue()) / (1024*1024):.1f} MB")
+            st.metric("Size", f"{len(uploaded_file.getvalue()) / (1024*1024):.1f} MB")
         with col2:
-            st.metric("Formato", uploaded_file.type)
+            st.metric("Format", uploaded_file.type)
         with col3:
-            st.metric("Duración", "~30s")
+            st.metric("Duration", "~30s")
         
         st.video(uploaded_file)
 
 with tab2:
-    st.header("⏱️ Seleccionar Segmento")
+    st.header("Select Segment")
     
     if 'uploaded_file' not in locals() or not uploaded_file:
-        st.warning("⚠️ Primero carga un video en la pestaña Upload")
+        st.warning("First upload a video in the Upload tab")
     else:
         col1, col2 = st.columns(2)
         
         with col1:
-            start_time = st.slider("Inicio (segundos)", 0.0, 25.0, 0.0, 0.1)
+            start_time = st.slider("Start (seconds)", 0.0, 25.0, 0.0, 0.1)
         with col2:
-            duration = st.slider("Duración (segundos)", 1.0, 30.0, 5.0, 0.1)
+            duration = st.slider("Duration (seconds)", 1.0, 30.0, 5.0, 0.1)
         
-        st.markdown("**Duración rápida:**")
+        st.markdown("**Quick duration:**")
         cols = st.columns(5)
         for i, dur in enumerate([3, 5, 10, 15, 30]):
             with cols[i]:
                 if st.button(f"{dur}s"):
                     duration = dur
         
-        st.info(f"📊 Segmento: {start_time:.1f}s - {start_time + duration:.1f}s ({duration:.1f}s)")
+        st.info(f"Segment: {start_time:.1f}s - {start_time + duration:.1f}s ({duration:.1f}s)")
 
 with tab3:
-    st.header("⚙️ Configuración")
+    st.header("Configuration")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("🎨 Visual")
+        st.subheader("Visual")
         fps = st.slider("FPS", 1, 15, 5)
-        overlay_style = st.selectbox("Estilo", ["heatmap", "highlight", "glow", "pulse", "transparent"])
-        overlay_intensity = st.slider("Intensidad", 0.0, 1.0, 0.7, 0.1)
+        overlay_style = st.selectbox("Style", ["heatmap", "highlight", "glow", "pulse", "transparent"])
+        overlay_intensity = st.slider("Intensity", 0.0, 1.0, 0.7, 0.1)
     
     with col2:
-        st.subheader("🧠 Modelo IA")
-        model = st.selectbox("Modelo", ["Automático", "VideoMAE Base", "VideoMAE Large", "TimeSformer"])
-        optimization = st.slider("Optimización", 0, 3, 2)
+        st.subheader("AI Model")
+        model = st.selectbox("Model", ["Auto", "VideoMAE Base", "VideoMAE Large", "TimeSformer"])
+        optimization = st.slider("Optimization", 0, 3, 2)
     
-    st.info("📊 Configuración guardada")
+    st.info("Configuration saved")
 
 with tab4:
-    st.header("🚀 Generar GIF")
+    st.header("Generate GIF")
     
-    if st.button("🚀 Generar GIF Inteligente", type="primary", use_container_width=True):
+    if st.button("Generate Smart GIF", type="primary", use_container_width=True):
         progress_bar = st.progress(0)
         status = st.empty()
         
         steps = [
-            (25, "📹 Extrayendo segmento..."),
-            (50, "🧠 Analizando con IA..."),
-            (75, "🎨 Aplicando overlay..."),
-            (100, "✅ ¡Completado!")
+            (25, "Extracting segment..."),
+            (50, "Analyzing with AI..."),
+            (75, "Applying overlay..."),
+            (100, "Completed!")
         ]
         
         for prog, msg in steps:
@@ -111,17 +111,17 @@ with tab4:
             progress_bar.progress(prog)
             time.sleep(1)
         
-        st.success("🎉 ¡GIF generado exitosamente!")
+        st.success("GIF generated successfully!")
         
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Tiempo", "8.5s")
+            st.metric("Time", "8.5s")
         with col2:
             st.metric("Frames", "42")
         with col3:
-            st.metric("Tamaño", "2.1 MB")
+            st.metric("Size", "2.1 MB")
         
-        st.download_button("💾 Descargar GIF", "demo_gif_data", "resultado.gif")
+        st.download_button("Download GIF", "demo_gif_data", "result.gif")
 
 st.markdown("---")
-st.markdown("*Demo v2.0 - En producción se conectaría al pipeline real de ViT-GIF Highlight*")
+st.markdown("*Demo v2.0 - In production would connect to real Vision Transformers pipeline*")

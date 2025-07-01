@@ -109,11 +109,11 @@ class GifComposer:
         # Convert to PIL Images with high quality
         pil_frames = []
         for frame in overlaid_frames:
-            img = Image.fromarray(frame)
-            # Apply high-quality processing
-            img = img.convert('RGB')  # Ensure RGB mode
-            if quality < 100:  # Only if we want compression
-                img = img.quantize(colors=256, method=2)  # High quality quantization
+            # Ensure frame is in correct format
+            if frame.dtype != np.uint8:
+                frame = frame.astype(np.uint8)
+            
+            img = Image.fromarray(frame, mode='RGB')
             pil_frames.append(img)
             
         # Calculate frame duration

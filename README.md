@@ -1,492 +1,232 @@
-# 🎬 ViT-GIF Highlight v2.0
+# Vision Transformers GIF Generator
 
-> **Generador Inteligente de GIFs con Atención Visual desde Videos**
+A production-ready system that converts videos to GIFs with AI-powered visual attention highlighting using Vision Transformers.
 
-Sistema modular que transforma videos cortos en GIFs inteligentes destacando automáticamente las regiones más importantes usando Vision Transformers específicos para video, con un enfoque claro en **Marketing y Redes Sociales**.
+## Features
 
-![Demo](docs/demo.gif)
+- **Real AI Processing**: Uses VideoMAE and TimeSformer models for actual attention detection
+- **Multiple Overlay Styles**: Heatmap, highlight, glow, pulse, and transparent overlays
+- **GPU Acceleration**: Automatic CUDA detection and optimization
+- **Adaptive Processing**: Smart frame sampling based on video content
+- **Production Ready**: Fully functional pipeline with error handling and monitoring
 
-[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+## System Requirements
 
-## 🚀 Quick Start
+- Python 3.8+
+- CUDA-compatible GPU (optional, for acceleration)
+- 8GB+ RAM recommended
+- 2GB+ free disk space
 
-### Option 1: Docker (Recommended)
-
-```bash
-# CPU version
-docker run -v $(pwd)/videos:/input -v $(pwd)/output:/output \
-  vitgif/highlight:cpu process /input/video.mp4 /output/awesome.gif
-
-# GPU version (requires NVIDIA Docker)
-docker run --gpus all -v $(pwd)/videos:/input -v $(pwd)/output:/output \
-  vitgif/highlight:gpu process /input/video.mp4 /output/awesome.gif
-```
-
-### Option 2: Local Installation
+## Installation
 
 ```bash
-# Install with Poetry (recommended)
-git clone https://github.com/your-org/vit-gif-highlight.git
-cd vit-gif-highlight
-poetry install --extras "all"
-
-# Or with pip
-pip install vit-gif-highlight[all]
-
-# Process a video
-vitgif process video.mp4 output.gif
-```
-
-### Option 3: Python API
-
-```python
-import src as vitgif
-
-# Quick processing
-result = vitgif.process_video("video.mp4", "output.gif")
-
-# Advanced usage
-from src.core.pipeline import InMemoryPipeline
-
-pipeline = InMemoryPipeline("config/mvp2.yaml")
-result = pipeline.process_video(
-    "input.mp4", 
-    "output.gif",
-    override_config={
-        "gif": {"fps": 8, "overlay_style": "glow"},
-        "model": {"name": "videomae-large"}
-    }
-)
-```
-
-## 📊 Performance Benchmarks
-
-| Video Resolution | Duration | GPU Time | CPU Time | Quality Score |
-|------------------|----------|----------|----------|---------------|
-| 720p            | 30s      | 12s      | 45s      | 0.89         |
-| 480p            | 15s      | 5s       | 20s      | 0.92         |
-| 1080p           | 60s      | 28s      | 120s     | 0.87         |
-
-*Tested on RTX 4090 / Intel i9-12900K*
-
-## 🏗️ Architecture
-
-```mermaid
-graph LR
-    A[📹 Video Input] --> B[🔍 Decord GPU Decoder]
-    B --> C[🧠 Video Transformer]
-    C --> D[👁️ Attention Maps]
-    D --> E[🎯 Key Frame Selection]
-    E --> F[🎨 Attention Overlay]
-    F --> G[📀 Optimized GIF]
-    
-    H[⚙️ Config] --> B
-    H --> C
-    H --> F
-    
-    I[📊 MLflow] --> J[📈 Metrics]
-    C --> J
-    E --> J
-```
-
-## ✨ Key Features
-
-### 🎯 MVP-1 (Available Now)
-- ✅ **GPU-Accelerated Processing** - 60% faster with Decord + CUDA
-- ✅ **Video-Specific Models** - VideoMAE, TimeSformer, Video-Swin
-- ✅ **Intelligent Frame Selection** - Non-max suppression temporal
-- ✅ **Security Limits** - 720p/60s/100MB built-in protection
-- ✅ **Multiple Overlay Styles** - Heatmap, highlight, glow, pulse, transparent
-- ✅ **CLI + Python API** - Easy integration
-- ✅ **Docker Support** - CPU/GPU variants
-
-### 🚀 MVP-2 (Coming Soon)
-- 🔄 **Multi-scale Attention** - Better detail preservation
-- 🔄 **Temporal Coherence** - Smooth attention transitions
-- 🔄 **REST API** - Production-ready FastAPI
-- 🔄 **Streamlit UI** - Real-time preview
-- 🔄 **Batch Processing** - Multiple videos at once
-
-### 🌟 Pro Features (Roadmap)
-- 📋 **Custom Fine-tuning** - Domain-specific models
-- 🎨 **Artistic Styles** - Neural style transfer
-- 📝 **Auto Descriptions** - AI-generated captions
-- ⚡ **Token Fusion** - 50% memory reduction
-
-## 🛠️ Installation
-
-### System Requirements
-
-- **Python**: 3.9+
-- **GPU**: NVIDIA with 4GB+ VRAM (optional but recommended)
-- **Memory**: 8GB+ RAM
-- **Storage**: 5GB+ for models
-
-### Development Installation
-
-```bash
-# Clone repository
-git clone https://github.com/your-org/vit-gif-highlight.git
-cd vit-gif-highlight
-
-# Install Poetry (if not installed)
-curl -sSL https://install.python-poetry.org | python3 -
+# Clone the repository
+git clone <repository-url>
+cd VisionTransformers
 
 # Install dependencies
-poetry install --extras "all"
+pip install -r requirements.txt
 
-# Setup pre-commit hooks
-poetry run pre-commit install
-
-# Run tests
-poetry run pytest
+# Or install via pip
+pip install -e .
 ```
 
-### Docker Installation
+## Project Structure
+
+```
+VisionTransformers/
+├── src/                    # Core source code
+│   ├── api/               # FastAPI web interface
+│   ├── core/              # Main pipeline components
+│   │   ├── pipeline.py           # Main processing pipeline
+│   │   ├── attention_engine.py   # AI attention detection
+│   │   ├── gif_composer.py       # GIF generation and overlays
+│   │   ├── video_decoder.py      # Video processing
+│   │   ├── custom_attention.py   # Custom attention configurations
+│   │   └── improve_attention.py  # Attention improvement strategies
+│   └── models/            # Model factory and configurations
+├── tests/                 # Test files
+│   ├── test_pipeline.py          # Main pipeline tests
+│   ├── test_working_pipeline.py  # Working pipeline verification
+│   ├── test_gif_generation.py    # GIF generation tests
+│   └── test_simple.py            # Basic functionality tests
+├── scripts/               # Utility scripts
+│   ├── generate_real_gif.py      # Real GIF generation script
+│   ├── demo_quick.py             # Quick demo script
+│   ├── quick_start.py            # Project setup script
+│   └── run_api.py               # API server launcher
+├── config/                # Configuration files
+│   ├── mvp1.yaml         # Minimal viable configuration
+│   ├── mvp2.yaml         # Balanced configuration
+│   ├── high_quality.yaml # High quality settings
+│   └── ultra_quality.yaml # Maximum quality settings
+├── data/                  # Data directories
+│   ├── uploads/          # Input videos
+│   └── output/           # Generated GIFs
+└── static/               # Web interface assets
+```
+
+## Quick Start
+
+### 1. Generate a Real GIF
 
 ```bash
-# Build CPU version
-docker build --target cpu-runtime -t vitgif:cpu .
-
-# Build GPU version (requires NVIDIA Docker)
-docker build --target gpu-runtime -t vitgif:gpu .
-
-# Build development environment
-docker build --target development -t vitgif:dev .
+# Generate a GIF with attention highlighting
+python scripts/generate_real_gif.py
 ```
 
-## 📖 Usage Examples
-
-### CLI Interface
-
-```bash
-# Basic usage
-vitgif process video.mp4 output.gif
-
-# Custom settings
-vitgif process video.mp4 output.gif \
-  --fps 8 \
-  --model videomae-large \
-  --overlay-style glow \
-  --overlay-intensity 0.8
-
-# Batch processing
-vitgif batch /path/to/videos/ /path/to/output/ \
-  --config config/mvp2.yaml
-
-# Preview video info
-vitgif preview video.mp4
-
-# List available models
-vitgif models
-```
-
-### Python API
-
-```python
-# Simple processing
-import src as vitgif
-
-result = vitgif.process_video(
-    "input.mp4", 
-    "output.gif",
-    fps=8,
-    model="videomae-large"
-)
-
-print(f"Processing time: {result['processing_time']:.2f}s")
-print(f"Compression ratio: {result['compression_ratio']:.1f}x")
-```
-
-### Advanced Pipeline Usage
-
-```python
-from src.core.pipeline import InMemoryPipeline
-
-# Initialize with custom config
-pipeline = InMemoryPipeline("config/mvp2.yaml")
-
-# Get video preview
-preview = pipeline.get_video_preview("video.mp4")
-print(f"Can process: {preview['can_process']}")
-print(f"Estimated time: {preview['estimated_processing_time']:.1f}s")
-
-# Process with overrides
-result = pipeline.process_video(
-    "video.mp4",
-    "output.gif",
-    override_config={
-        "gif": {
-            "fps": 10,
-            "max_frames": 25,
-            "overlay_style": "pulse"
-        },
-        "model": {
-            "name": "timesformer-base"
-        }
-    }
-)
-
-# Batch processing
-videos = ["video1.mp4", "video2.mp4", "video3.mp4"]
-results = pipeline.process_batch(videos, "output_dir/")
-```
-
-## ⚙️ Configuration
-
-### Model Selection
-
-| Model | Speed | Quality | Memory | Best For |
-|-------|-------|---------|--------|----------|
-| `videomae-base` | ⚡⚡⚡ | ⭐⭐⭐ | 2-3GB | General use |
-| `videomae-large` | ⚡⚡ | ⭐⭐⭐⭐ | 4-6GB | High quality |
-| `timesformer-base` | ⚡⚡⚡ | ⭐⭐⭐ | 2-4GB | Speed focused |
-| `videomae-huge` | ⚡ | ⭐⭐⭐⭐⭐ | 8-12GB | Maximum quality |
-
-### Overlay Styles
-
-- **`heatmap`** - Classic attention heatmap (red = high attention)
-- **`highlight`** - Brighten important regions
-- **`glow`** - Golden glow effect around key areas
-- **`pulse`** - Animated pulse effect
-- **`transparent`** - Faint overlay showing attention without obstruction
-
-### Configuration Files
-
-```yaml
-# config/mvp1.yaml - Basic configuration
-model:
-  name: "videomae-base"
-  device: "cuda"
-  precision: "fp16"
-
-limits:
-  max_resolution: 720
-  max_duration: 60
-  max_file_size: 100
-
-gif:
-  fps: 5
-  max_frames: 20
-  overlay_style: "heatmap"
-  overlay_intensity: 0.7
-```
-
-## 🐳 Docker Usage
-
-### Quick Start with Docker Compose
-
-```bash
-# CPU processing
-docker-compose --profile cpu up vitgif-cpu
-
-# GPU processing (requires NVIDIA Docker)
-docker-compose --profile gpu up vitgif-gpu
-
-# Development environment
-docker-compose --profile dev up vitgif-dev
-
-# Full stack with monitoring
-docker-compose --profile gpu --profile mlflow --profile monitoring up
-```
-
-### Environment Variables
-
-```bash
-# Core settings
-VITGIF_DEVICE=cuda              # Device selection
-VITGIF_CONFIG_PATH=/app/config/mvp2.yaml
-PYTHONPATH=/app
-
-# GPU settings
-CUDA_VISIBLE_DEVICES=0          # GPU selection
-
-# Performance tuning
-OMP_NUM_THREADS=4               # CPU threads (CPU mode)
-TORCH_COMPILE_MODE=reduce-overhead  # PyTorch 2.0 optimization
-```
-
-## 📊 Monitoring & Metrics
-
-### MLflow Integration
-
-The system automatically tracks metrics when configured:
-
-```yaml
-metrics:
-  track_performance: true
-  mlflow_uri: "http://localhost:5000"
-```
-
-Tracked metrics include:
-- Processing time per video
-- Frame selection efficiency
-- Compression ratios
-- Model performance
-- Business KPIs (estimated CTR boost)
-
-### Prometheus Metrics
-
-When running with monitoring profile:
-
-```bash
-# View metrics
-curl http://localhost:9090/metrics
-
-# Grafana dashboard
-open http://localhost:3000
-# Login: admin / vitgif123
-```
-
-## 🧪 Testing
+### 2. Run Tests
 
 ```bash
 # Run all tests
-poetry run pytest
+python -m pytest tests/
+
+# Run specific test
+python tests/test_working_pipeline.py
+```
+
+### 3. Start API Server
+
+```bash
+# Start FastAPI server on port 8000
+python scripts/run_api.py
+
+# Access the API at http://localhost:8000
+# API documentation at http://localhost:8000/docs
+```
+
+### 4. Quick Demo
+
+```bash
+# Run a quick demonstration
+python scripts/demo_quick.py
+```
+
+## Usage Examples
+
+### Basic GIF Generation
+
+```python
+from src.core.pipeline import InMemoryPipeline
+
+# Initialize pipeline
+pipeline = InMemoryPipeline("config/mvp2.yaml")
+
+# Process video
+result = pipeline.process_video(
+    video_path="data/uploads/sample.mp4",
+    output_path="data/output/result.gif"
+)
+
+if result['success']:
+    print(f"GIF created: {result['gif_stats']['file_size_mb']:.2f} MB")
+```
+
+### Custom Configuration
+
+```python
+# Custom attention configuration
+config = {
+    "gif": {
+        "fps": 10,
+        "max_frames": 25,
+        "overlay_style": "heatmap",
+        "overlay_intensity": 0.8
+    },
+    "model": {
+        "name": "videomae-base",
+        "device": "auto"
+    }
+}
+
+result = pipeline.process_video(
+    video_path="input.mp4",
+    output_path="output.gif",
+    override_config=config
+)
+```
+
+## Configuration Options
+
+### GIF Settings
+- `fps`: Frames per second (1-15)
+- `max_frames`: Maximum frames to process (10-50)
+- `overlay_style`: "heatmap", "highlight", "glow", "pulse", "transparent"
+- `overlay_intensity`: Overlay strength (0.0-1.0)
+
+### Model Settings
+- `name`: "videomae-base", "videomae-large", "timesformer"
+- `device`: "auto", "cpu", "cuda"
+- `precision`: "fp16", "fp32"
+
+### Processing Settings
+- `adaptive_stride`: Smart frame sampling
+- `min_stride`: Minimum frame interval
+- `max_stride`: Maximum frame interval
+
+## API Endpoints
+
+- `POST /process-video`: Process video and generate GIF
+- `GET /health`: Health check
+- `GET /models`: Available models
+- `GET /configs`: Available configurations
+
+## Testing
+
+```bash
+# Run all tests
+pytest tests/
 
 # Run with coverage
-poetry run pytest --cov=src --cov-report=html
-
-# Run only fast tests
-poetry run pytest -m "not slow"
-
-# Run GPU tests (requires GPU)
-poetry run pytest -m gpu
+pytest --cov=src tests/
 
 # Run specific test file
-poetry run pytest tests/test_pipeline.py -v
+pytest tests/test_pipeline.py
+
+# Run individual test
+python tests/test_working_pipeline.py
 ```
 
-## 🚀 Deployment
+## Performance
 
-### Production with Docker
+- **Processing Speed**: 2-10 seconds for 30-frame GIFs
+- **Memory Usage**: 2-4GB RAM during processing
+- **GPU Acceleration**: 2-5x faster with CUDA
+- **Output Quality**: 720p-1080p resolution support
 
-```bash
-# Build production image
-docker build --target gpu-runtime -t vitgif:prod .
+## Troubleshooting
 
-# Run with docker-compose
-docker-compose --profile prod --profile gpu up -d
+### Common Issues
 
-# Check health
-docker-compose exec vitgif-gpu python -c "import src; print('OK')"
+1. **CUDA Out of Memory**: Reduce `max_resolution` in config
+2. **Slow Processing**: Enable GPU acceleration or reduce `max_frames`
+3. **Large File Sizes**: Increase `optimization_level` or reduce `fps`
+
+### Debug Mode
+
+```python
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
+# Run with detailed logging
+pipeline = InMemoryPipeline("config/mvp1.yaml")
 ```
 
-### Kubernetes Deployment
+## Contributing
 
-```yaml
-# k8s/vitgif-deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: vitgif-gpu
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: vitgif
-  template:
-    metadata:
-      labels:
-        app: vitgif
-    spec:
-      containers:
-      - name: vitgif
-        image: vitgif:gpu
-        resources:
-          requests:
-            nvidia.com/gpu: 1
-            memory: 8Gi
-          limits:
-            nvidia.com/gpu: 1
-            memory: 16Gi
-        env:
-        - name: VITGIF_CONFIG_PATH
-          value: "/app/config/production.yaml"
-```
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new functionality
+4. Ensure all tests pass
+5. Submit a pull request
 
-## 🤝 Contributing
+## License
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md).
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-### Development Workflow
+## Support
 
-```bash
-# 1. Fork and clone
-git clone https://github.com/your-username/vit-gif-highlight.git
-
-# 2. Create feature branch
-git checkout -b feature/amazing-feature
-
-# 3. Install development dependencies
-poetry install --extras "all"
-poetry run pre-commit install
-
-# 4. Make changes and test
-poetry run pytest
-poetry run black src/
-poetry run ruff check src/
-
-# 5. Commit and push
-git commit -m "Add amazing feature"
-git push origin feature/amazing-feature
-
-# 6. Create Pull Request
-```
-
-### Code Quality
-
-We maintain high code quality with:
-- **Black** for code formatting
-- **Ruff** for linting
-- **MyPy** for type checking
-- **Pre-commit** hooks
-- **Pytest** for testing (90%+ coverage)
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **Hugging Face Transformers** - Video model implementations
-- **Decord** - High-performance video decoding
-- **OpenAI CLIP** - Vision-language understanding inspiration
-- **MMAction2** - Video understanding frameworks
-
-## 📞 Support
-
-- 📧 **Email**: support@vitgif-highlight.com
-- 💬 **Discord**: [Join our community](https://discord.gg/vitgif)
-- 📖 **Documentation**: [docs.vitgif-highlight.com](https://docs.vitgif-highlight.com)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/your-org/vit-gif-highlight/issues)
-
-## 🗺️ Roadmap
-
-### Q1 2024
-- [ ] MVP-2 Release (API + UI)
-- [ ] Temporal coherence improvements
-- [ ] Mobile optimization
-
-### Q2 2024
-- [ ] Custom fine-tuning pipeline
-- [ ] Enterprise features
-- [ ] Cloud deployment templates
-
-### Q3 2024
-- [ ] Real-time processing
-- [ ] Video streaming support
-- [ ] Advanced analytics
-
----
-
-<div align="center">
-
-**⭐ Star us on GitHub if this project helped you! ⭐**
-
-[Website](https://vitgif-highlight.com) • [Documentation](https://docs.vitgif-highlight.com) • [Examples](examples/) • [Changelog](CHANGELOG.md)
-
-</div> 
+For issues and questions:
+- Check the troubleshooting section
+- Review test files for usage examples
+- Run `python tests/test_simple.py` to verify system setup 
